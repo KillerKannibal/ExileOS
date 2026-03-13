@@ -1,0 +1,2 @@
+This folder contains the filesystem for MinOS.
+it is important you do NOT delete it under any circumstance!

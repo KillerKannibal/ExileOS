@@ -1,0 +1,11 @@
+# Build directories
+build/
+isodir/
+
+# Compiled output
+*.iso
+*.bin
+*.o
+
+# Temporary files
+*~
