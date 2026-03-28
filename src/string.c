@@ -57,3 +57,9 @@ void* memcpy(void* dest, const void* src, size_t n) {
     for (size_t i = 0; i < n / 4; i++) d[i] = s[i];
     return dest;
 }
+
+void* memset(void* dest, int val, size_t n) {
+    unsigned char* temp = (unsigned char*)dest;
+    for ( ; n != 0; n--) *temp++ = val;
+    return dest;
+}

@@ -199,8 +199,9 @@ fs_node_t *tar_finddir(fs_node_t *node __attribute__((unused)), char *name) {
 
     // In our flat TAR FS, we ignore the directory node passed in
     // and just search the linear archive.
+    if (tar_start_address == 0) return 0;
     uintptr_t addr = tar_start_address;
-    while (1) {
+    for (int limit = 0; limit < 512; limit++) { // Safety limit: max 512 files
         tar_header_t* header = (tar_header_t*)addr;
         if (header->name[0] == '\0') break; // End of archive
 
@@ -249,6 +250,11 @@ dirent_t *readdir_fs(fs_node_t *node, uint32_t index) {
 }
 
 uint32_t write_fs(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    // Security Check: Block writes to system-flagged nodes
+    if (node->flags & FS_SYSTEM) {
+        return 0; 
+    }
+
     if (node->write) return node->write(node, offset, size, buffer);
     return 0;
 }

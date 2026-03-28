@@ -1,24 +1,41 @@
-/* Simple Linker Script for MinOS */
+/* ExileOS Linker Script - Forged for Thor */
+OUTPUT_FORMAT("elf32-i386")
+OUTPUT_ARCH(i386)
 ENTRY(_start)
 
 SECTIONS {
-    /* Load the kernel at 1MB */
+    /* Load the kernel at 1MB - Standard for Multiboot */
     . = 1M;
 
-    .text : {
-        *(.multiboot) /* The multiboot header must be first */
+    .multiboot : ALIGN(4K) {
+        *(.multiboot)
+    }
+
+    .text : ALIGN(4K) {
         *(.text)
     }
 
-    .rodata : { *(.rodata) }
+    /* Read-only data */
+    .rodata BLOCK(4K) : ALIGN(4K) {
+        *(.rodata)
+    }
 
-    /* Align data to a page boundary to create a new, writable segment */
-    . = ALIGN(4096);
-    .data   : { *(.data) }
+    /* Writable data (Page Aligned for Ring 0/3 separation later) */
+    .data BLOCK(4K) : ALIGN(4K) {
+        *(.data)
+    }
 
-    /* The BSS section for uninitialized static variables (like your backbuffer) */
-    .bss : {
+    /* Uninitialized data (BSS) */
+    .bss BLOCK(4K) : ALIGN(4K) {
+        sbss = .;
         *(COMMON)
         *(.bss)
+        ebss = .;
+    }
+
+    /DISCARD/ : {
+        *(.note*)
+        *(.comment)
+        *(.eh_frame)
     }
 }

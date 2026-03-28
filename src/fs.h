@@ -5,6 +5,7 @@
 
 #define FS_FILE        0x01
 #define FS_DIRECTORY   0x02
+#define FS_SYSTEM      0x04  // Protected system file
 
 struct fs_node;
 

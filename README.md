@@ -1,8 +1,8 @@
-# MinOS
+# ExileOS
 
 ## Introduction
 
-MinOS is a 32-bit hobby operating system built from scratch. It is designed to boot via GRUB (Multiboot standard) and features a graphical user interface, a window manager, and a suite of basic applications. The project serves as an educational exploration into operating system development, covering concepts from bootloading and interrupt handling to filesystems and graphical user interfaces.
+ExileOS is a 32-bit hobby operating system built from scratch. It is designed to boot via GRUB (Multiboot standard) and features a graphical user interface, a window manager, and a suite of basic applications. The project serves as an educational exploration into operating system development, covering concepts from bootloading and interrupt handling to filesystems and graphical user interfaces.
 
 ## Features
 
@@ -31,7 +31,7 @@ MinOS is a 32-bit hobby operating system built from scratch. It is designed to b
 
 ### Dependencies
 
-To build and run MinOS, you will need a standard Linux environment (such as Ubuntu/Debian, I used Linux Mint) with the following tools installed:
+To build and run ExileOS, you will need a standard Linux environment (such as Ubuntu/Debian, I used Linux Mint) with the following tools installed:
 
 - `build-essential` (provides `make` and `gcc`)
 - `nasm` (Netwide Assembler)
@@ -53,7 +53,7 @@ Navigate to the root directory of the project and run the `make` command.
 make
 ```
 
-This will compile the kernel, create the initial RAM disk, and package everything into a bootable ISO file named `MinOS.iso`.
+This will compile the kernel, create the initial RAM disk, and package everything into a bootable ISO file named `ExileOS.iso`.
 
 ## Running
 
@@ -63,9 +63,11 @@ To run the operating system in an emulator, use the provided `run` target in the
 make run
 ```
 
-This will launch QEMU with the `MinOS.iso` file as a virtual CD-ROM.
+This will launch QEMU with the `ExileOS.iso` file as a virtual CD-ROM.
 
 To clean up all build artifacts, run:
 ```sh
 make clean
 ```
+
+PS, This OS was built by one 18 year old solo developer.

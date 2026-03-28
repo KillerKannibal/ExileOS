@@ -1,48 +1,63 @@
-# Simple Makefile for MinOS
-
-# Toolchain
+# Toolchain - WSL2 Native
 CC = gcc
 AS = nasm
 
-# Build flags
-CFLAGS = -m32 -ffreestanding -O2 -Wall -Wextra -Isrc
+# ExileOS Build Flags
+# -m32: Force 32-bit for the Exile architecture
+# -fno-stack-protector: Stop the compiler from asking for libs Thor doesn't have yet
+CFLAGS = -m32 -ffreestanding -fno-stack-protector -fno-pie -fno-leading-underscore -O2 -Wall -Wextra -Isrc
 ASFLAGS = -f elf32
 
-# Project files
-OBJS = build/boot.o build/interrupts.o build/kernel.o build/gdt.o build/idt.o build/fs.o build/string.o build/gui.o
-KERNEL = build/myos.bin
-INITRD = build/initrd.tar
-ISO = MinOS.iso
+# Project structure
+SRCDIR = src
+BUILDDIR = build
+OBJS = $(BUILDDIR)/boot.o $(BUILDDIR)/main.o $(BUILDDIR)/globals.o $(BUILDDIR)/wm.o $(BUILDDIR)/shell.o \
+       $(BUILDDIR)/editor.o $(BUILDDIR)/calc.o $(BUILDDIR)/fileman.o $(BUILDDIR)/game.o \
+       $(BUILDDIR)/input.o $(BUILDDIR)/rtc.o $(BUILDDIR)/utils.o \
+       $(BUILDDIR)/gdt.o $(BUILDDIR)/idt.o $(BUILDDIR)/interrupts.o $(BUILDDIR)/fs.o \
+       $(BUILDDIR)/string.o $(BUILDDIR)/gui.o $(BUILDDIR)/pci.o $(BUILDDIR)/net.o $(BUILDDIR)/rtl8139.o $(BUILDDIR)/browser.o
 
-.PHONY: all run clean
+KERNEL = $(BUILDDIR)/myos.bin
+INITRD = $(BUILDDIR)/initrd.tar
+ISO = ExileOS.iso
+
+.PHONY: all run test clean
 
 all: $(ISO)
 
-$(ISO): $(KERNEL) $(INITRD) src/grub.cfg
-	@echo "==> Creating ISO image..."
+# The "Thor" Strike - Linking the Kernel
+$(KERNEL): $(OBJS) $(SRCDIR)/linker.ld
+	$(CC) -T $(SRCDIR)/linker.ld -o $(KERNEL) $(OBJS) -m32 -nostdlib -ffreestanding -fno-pie -no-pie -Wl,--build-id=none -lgcc
+
+# Compiling C files
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(BUILDDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Assembling Assembly files
+$(BUILDDIR)/%.o: $(SRCDIR)/%.asm
+	@mkdir -p $(BUILDDIR)
+	$(AS) $(ASFLAGS) $< -o $@
+
+# Creating the ISO (Requires xorriso and grub-pc-bin in WSL2)
+$(ISO): $(KERNEL) $(INITRD) $(SRCDIR)/grub.cfg
+	rm -rf isodir
 	@mkdir -p isodir/boot/grub
-	@cp $(KERNEL) isodir/boot/myos.bin
-	@cp $(INITRD) isodir/boot/initrd.tar
-	@cp src/grub.cfg isodir/boot/grub/grub.cfg
-	@grub-mkrescue -o $(ISO) isodir > /dev/null 2>&1
-
-$(KERNEL): $(OBJS) src/linker.ld
-	@$(CC) -m32 -T src/linker.ld -o $(KERNEL) -ffreestanding -O2 -nostdlib $(OBJS) -lgcc
-
-build/%.o: src/%.c src/gdt.h src/idt.h src/io.h src/multiboot.h src/font.h src/fs.h src/string.h src/gui.h
-	@mkdir -p build
-	@$(CC) $(CFLAGS) -c $< -o $@
-
-build/%.o: src/%.asm
-	@mkdir -p build
-	@$(AS) $(ASFLAGS) $< -o $@
+	cp $(KERNEL) isodir/boot/myos.bin
+	cp $(INITRD) isodir/boot/initrd.tar
+	cp $(SRCDIR)/grub.cfg isodir/boot/grub/grub.cfg
+	grub-mkrescue -o $(ISO) isodir
 
 $(INITRD):
-	@echo "==> Creating initrd..."
-	@tar -cf $(INITRD) -C fs .
+	tar -cf $(INITRD) -C fs .
 
+# Run the full ISO
 run: $(ISO)
-	@qemu-system-i386 -cdrom $(ISO) -m 256M
+	qemu-system-i386 -cdrom $(ISO) -m 256M -vga std -serial stdio -no-reboot -no-shutdown
+
+# Fast Test (Direct Kernel Boot) - Best for development
+test: $(KERNEL) $(INITRD)
+	qemu-system-i386 -kernel $(KERNEL) -initrd $(INITRD) -m 256M -vga std -serial stdio -no-reboot -no-shutdown
 
 clean:
-	@rm -rf build isodir $(ISO) $(INITRD)
+	rm -rf $(BUILDDIR) isodir $(ISO) $(INITRD)

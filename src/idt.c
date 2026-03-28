@@ -6,7 +6,7 @@ struct idt_ptr idtp;
 
 extern void idt_load(uint32_t);
 extern void keyboard_asm_handler();
-extern void irq_common_stub(); // New common stub for safety
+extern void irq_common_stub();
 extern void mouse_asm_handler();
 
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags) {
@@ -32,7 +32,8 @@ void init_idt() {
     outb(0x21, 0x04); outb(0xA1, 0x02);
     outb(0x21, 0x01); outb(0xA1, 0x01);
     
-    // Mask everything except Keyboard (IRQ 1) and Cascade (IRQ 2)
+    // Unmask Keyboard (IRQ 1) AND Cascade (IRQ 2).
+    // IRQ 2 MUST be unmasked for the Slave PIC (Mouse) to work.
     outb(0x21, 0xF9); 
     // Mask everything except Mouse (IRQ 12, which is Slave IRQ 4)
     outb(0xA1, 0xEF);
