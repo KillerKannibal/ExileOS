@@ -12,7 +12,7 @@ ASFLAGS = -f elf32
 SRCDIR = src
 BUILDDIR = build
 OBJS = $(BUILDDIR)/boot.o $(BUILDDIR)/main.o $(BUILDDIR)/globals.o $(BUILDDIR)/wm.o $(BUILDDIR)/shell.o \
-       $(BUILDDIR)/editor.o $(BUILDDIR)/calc.o $(BUILDDIR)/fileman.o $(BUILDDIR)/game.o \
+       $(BUILDDIR)/editor.o $(BUILDDIR)/calc.o $(BUILDDIR)/fileman.o $(BUILDDIR)/game.o $(BUILDDIR)/debug.o \
        $(BUILDDIR)/input.o $(BUILDDIR)/rtc.o $(BUILDDIR)/utils.o \
        $(BUILDDIR)/gdt.o $(BUILDDIR)/idt.o $(BUILDDIR)/interrupts.o $(BUILDDIR)/fs.o \
        $(BUILDDIR)/string.o $(BUILDDIR)/gui.o $(BUILDDIR)/pci.o $(BUILDDIR)/net.o $(BUILDDIR)/rtl8139.o $(BUILDDIR)/browser.o

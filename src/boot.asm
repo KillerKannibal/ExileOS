@@ -43,6 +43,13 @@ extern sbss
 extern ebss
 
 _start:
+    ; Quick "Hacker" status print to VGA Text Buffer (0xB8000)
+    ; This writes 'E' 'X' 'I' 'L' 'E' to the top left of the screen
+    mov dword [0xb8000], 0x074c0745 ; 'E' and 'L' (with grey attribute)
+    
+    ; 1. Clear BSS
+    mov edi, sbss
+    
     ; 1. Clear BSS before we use the stack or any static variables
     ; This prevents overwriting our own stack/arguments later.
     mov edi, sbss

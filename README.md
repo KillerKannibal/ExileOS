@@ -71,4 +71,3 @@ To clean up all build artifacts, run:
 make clean
 ```
 
-PS, This OS was built by one 18 year old solo developer.

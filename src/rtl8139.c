@@ -3,6 +3,7 @@
 #include "io.h"
 #include "shell.h"
 #include "string.h"
+#include "debug.h"
 
 static uint32_t io_base;
 static uint8_t mac_address[6];
@@ -57,8 +58,14 @@ void rtl8139_init() {
     // 9. Enable Receiver and Transmitter
     outb(io_base + 0x37, 0x0C);
 
-    // 10. Read MAC Address
-    for(int i=0; i<6; i++) mac_address[i] = inb(io_base + i);
+    // 10. Read MAC Address and Log it
+    kprint_serial("[NET] RTL8139 MAC: ");
+    for(int i=0; i<6; i++) {
+        mac_address[i] = inb(io_base + i);
+        kprint_hex(mac_address[i]);
+        if (i < 5) kprint_serial(":");
+    }
+    kprint_serial("\n");
     
     term_print("Network: RTL8139 Ready. MAC obtained.");
 }

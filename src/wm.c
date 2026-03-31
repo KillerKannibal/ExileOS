@@ -1,18 +1,139 @@
 #include "wm.h"
 #include "gui.h"
-#include "string.h"
-#include "fs.h"
-#include "editor.h"
-#include "calc.h"
-#include "fileman.h"
-#include "game.h"
+#include "input.h"
 #include "globals.h"
-#include "shell.h"
+#include "string.h"
+#include "game.h"
+#include "fileman.h"
+#include "editor.h"
 #include "utils.h"
+#include "fs.h"
+#include "shell.h"
 #include "browser.h"
 
 window_t windows[MAX_WINDOWS];
 int window_count = 0;
+
+// Internal helpers for the loop
+static int prev_mouse_x = 0;
+static int prev_mouse_y = 0;
+static uint8_t prev_mouse_left = 0;
+
+void wm_update() {
+    int mouse_dx = mouse_x - prev_mouse_x;
+    int mouse_dy = mouse_y - prev_mouse_y;
+
+    // 1. Handle Window Dragging & Resizing
+    if (window_count > 0) {
+        window_t* active = &windows[window_count - 1];
+        
+        if (mouse_left) {
+            if (active->resizing) {
+                active->w += mouse_dx;
+                active->h += mouse_dy;
+                if (active->w < 150) active->w = 150;
+                if (active->h < 100) active->h = 100;
+            } else if (active->dragging && !active->fullscreen) {
+                active->x += mouse_dx;
+                active->y += mouse_dy;
+            }
+        } else {
+            active->dragging = 0;
+            active->resizing = 0;
+        }
+    }
+
+    // 2. Handle Clicks (Focus & Buttons)
+    if (mouse_left && !prev_mouse_left) {
+        // Taskbar / Start Menu checks first
+        if (mouse_y >= (int)screen_height - 40) {
+            if (mouse_x >= 0 && mouse_x <= 70) {
+                start_menu_open = !start_menu_open;
+            } else {
+                int start_x = 70;
+                for (int i = 0; i < window_count; i++) {
+                    int b_x = start_x + (i * 130);
+                    if (mouse_x >= b_x && mouse_x <= b_x + 125) {
+                        if (windows[i].minimized) {
+                            windows[i].minimized = 0;
+                            open_window(windows[i].type);
+                        } else if (i == window_count - 1) {
+                            windows[i].minimized = 1;
+                        } else {
+                            open_window(windows[i].type);
+                        }
+                        start_menu_open = 0;
+                        break;
+                    }
+                }
+            }
+        } else if (start_menu_open && mouse_x >= 0 && mouse_x <= 160 && mouse_y >= (int)screen_height - 290) {
+            int y_rel = mouse_y - ((int)screen_height - 290);
+            if (y_rel >= 10 && y_rel < 35) open_window(MODE_SHELL);
+            else if (y_rel >= 35 && y_rel < 60) open_window(MODE_EDITOR);
+            else if (y_rel >= 60 && y_rel < 85) open_window(MODE_CALC);
+            else if (y_rel >= 85 && y_rel < 110) open_window(MODE_MONITOR);
+            else if (y_rel >= 110 && y_rel < 135) open_window(MODE_SETTINGS);
+            else if (y_rel >= 135 && y_rel < 160) open_window(MODE_FILEMAN);
+            else if (y_rel >= 160 && y_rel < 185) open_window(MODE_GAME);
+            else if (y_rel >= 185 && y_rel < 210) open_window(MODE_BROWSER);
+            else if (y_rel >= 210 && y_rel < 235) open_window(MODE_SYSINFO);
+            
+            start_menu_open = 0;
+        } else {
+            // Window interaction (Top to Bottom)
+            for (int i = window_count - 1; i >= 0; i--) {
+                window_t* win = &windows[i];
+                if (!win->minimized && mouse_x >= win->x && mouse_x <= win->x + win->w &&
+                    mouse_y >= win->y && mouse_y <= win->y + win->h) {
+                    
+                    open_window(win->type); // Focus it
+                    win = &windows[window_count - 1];
+
+                    // Title Bar Logic
+                    if (mouse_y <= win->y + 25) {
+                        if (mouse_x >= win->x + win->w - 22) close_window(window_count - 1);
+                        else if (mouse_x >= win->x + win->w - 66) win->minimized = 1;
+                        else if (!win->fullscreen) win->dragging = 1;
+                    } 
+                    // Resize handle check
+                    else if (mouse_x >= win->x + win->w - 16 && mouse_y >= win->y + win->h - 16) {
+                        win->resizing = 1;
+                    }
+                    break;
+                }
+            }
+            // Close start menu if we clicked the desktop or a window
+            start_menu_open = 0;
+        }
+    }
+
+    // 3. Game Logic (MinDoom Mouse Look)
+    if (window_count > 0 && windows[window_count-1].type == MODE_GAME && mouse_dx != 0) {
+        // Use your fixed-point rotation code here
+        int rotCos = 65522; int rotSin = 1310;
+        if (mouse_dx < 0) rotSin = -rotSin;
+        
+        int oldDirX = p_dir_x;
+        p_dir_x = (int)(((int64_t)p_dir_x * rotCos - (int64_t)p_dir_y * rotSin) >> 16);
+        p_dir_y = (int)(((int64_t)oldDirX * rotSin + (int64_t)p_dir_y * rotCos) >> 16);
+        // ... same for plane_x/y
+    }
+
+    prev_mouse_x = mouse_x;
+    prev_mouse_y = mouse_y;
+    prev_mouse_left = mouse_left;
+}
+
+void wm_draw_all() {
+    for(int i = 0; i < window_count; i++) {
+        if (!windows[i].minimized) {
+            draw_window(&windows[i]);
+        }
+    }
+}
+
+// [Include your existing open_window, close_window, draw_window here]
 
 void open_window(term_mode_t type) {
     // If window of this type exists, bring to front (Focus)
@@ -294,6 +415,32 @@ void draw_window(window_t* win) {
         if (global_mbinfo) {
              // We could format memory info here if we had printf
              draw_string("Multiboot Info Detected", x + 20, y + 130, 0x00FF00);
+        }
+    }
+    else if (win->type == MODE_BROWSER) {
+        draw_rect(x, y, w, 25, 0x2980B9); // Blue Title Bar
+        draw_window_buttons(win, x, y, w);
+        draw_string("Exile Explorer", x + 8, y + 8, 0xFFFFFF);
+
+        // URL Bar
+        draw_rect(x + 5, y + 30, w - 10, 20, 0x333333);
+        draw_string(browser_url, x + 10, y + 35, 0xCCCCCC);
+
+        // Content Area
+        draw_rect(x + 5, y + 55, w - 10, h - 60, 0xFFFFFF);
+        
+        char line_buf[76];
+        int line_y = y + 65;
+        int p = 0;
+        for(int i = 0; browser_content[i] && line_y < y + h - 20; i++) {
+            if(browser_content[i] == '\n' || p >= 74) {
+                line_buf[p] = '\0';
+                draw_string(line_buf, x + 12, line_y, 0x333333);
+                line_y += 12;
+                p = 0;
+            } else if (browser_content[i] >= 32) {
+                line_buf[p++] = browser_content[i];
+            }
         }
     }
     else { // MODE_SHELL (Default)

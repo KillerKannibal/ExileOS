@@ -36,5 +36,7 @@ void open_window(term_mode_t type);
 void close_window(int index);
 void draw_window(window_t* win);
 void draw_window_buttons(window_t* win, int x, int y, int w);
+void wm_update();
+void wm_draw_all();
 
 #endif

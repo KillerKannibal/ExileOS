@@ -3,6 +3,7 @@
 #include "shell.h"
 #include "utils.h"
 #include "string.h"
+#include "debug.h"
 
 uint32_t pci_config_read(uint8_t bus, uint8_t slot, uint8_t func, uint8_t offset) {
     uint32_t address;
@@ -38,6 +39,10 @@ void pci_init() {
 
                 if (class_code == PCI_CLASS_SERIAL_BUS && subclass == PCI_SUBCLASS_USB) {
                     char msg[64] = "Found USB Controller: ";
+                    kprint_serial("[PCI] Found USB Controller type: ");
+                    kprint_hex(prog_if);
+                    kprint_serial("\n");
+
                     if (prog_if == 0x00) strcat(msg, "UHCI (USB 1.1)");
                     else if (prog_if == 0x10) strcat(msg, "OHCI (USB 1.1)");
                     else if (prog_if == 0x20) strcat(msg, "EHCI (USB 2.0)");
