@@ -38,7 +38,7 @@ void kernel_main(struct multiboot_info* mbinfo) {
     init_idt();
 
     // Setup Video
-    if (mbinfo->flags & (1 << 12)) {
+    if (mbinfo->flags & (1 << 6)) {
         init_vga(mbinfo);
         kprint_serial("VGA LFB Initialized\n");
     } else {
