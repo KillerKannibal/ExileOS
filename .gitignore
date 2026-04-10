@@ -9,3 +9,6 @@ isodir/
 
 # Temporary files
 *~
+
+# IDE stuff
+.vscode/
